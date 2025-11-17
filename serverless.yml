@@ -13,7 +13,7 @@ provider:
   stage: ${opt:stage, 'dev'}
 
   iam:
-    role: arn:aws:iam::245604380054:role/LabRole
+    role: arn:aws:iam::088462649389:role/LabRole
     # ⚠️ ¡IMPORTANTE! Asegúrate de que este 'LabRole' tenga los permisos
     # necesarios en su política de IAM, como:
     # - s3:CreateBucket
