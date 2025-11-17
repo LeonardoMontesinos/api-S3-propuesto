@@ -1,0 +1,90 @@
+org: joemir27
+service: api-s3
+
+provider:
+  name: aws
+  runtime: python3.13 
+  memorySize: 256
+  timeout: 20
+  
+  # 👇 AGREGADO: Para cumplir con "dev, test y prod"
+  # Esto hace que el stage sea 'dev' por defecto,
+  # pero puedes cambiarlo con: serverless deploy --stage test
+  stage: ${opt:stage, 'dev'}
+
+  iam:
+    role: arn:aws:iam::245604380054:role/LabRole
+    # ⚠️ ¡IMPORTANTE! Asegúrate de que este 'LabRole' tenga los permisos
+    # necesarios en su política de IAM, como:
+    # - s3:CreateBucket
+    # - s3:PutObject
+    # - s3:ListBucket
+    # - s3:ListAllMyBuckets
+
+functions:
+  # --- Funciones que ya tenías ---
+  lista_buckets:
+    handler: lista_buckets.lambda_handler
+    memorySize: 512 # Respeto el memorySize que tenías para esta función
+    events:
+      - http:
+          path: /s3/lista-buckets
+          method: get
+          cors: true
+
+  lista_objetos_bucket:
+    handler: lista_objetos_bucket.lambda_handler
+    events:
+      - http:
+          path: /s3/bucket/lista-objetos
+          method: post # Asumo que aquí envías el nombre del bucket en el body
+          cors: true
+
+  # --- 👇 Funciones NUEVAS del Ejercicio 4 ---
+
+  # 1. Crear un nuevo bucket
+  crear_bucket:
+    handler: crear_bucket.lambda_handler # Debes crear el archivo/función 'crear_bucket.py'
+    events:
+      - http:
+          path: /s3/bucket/crear
+          method: post # Usamos POST para crear un recurso nuevo
+          cors: true
+          # En el body del POST, enviarás:
+          # { "bucket_name": "nombre-de-tu-bucket-super-unico" }
+
+  # 2. Crear un nuevo directorio en un bucket existente
+  # Nota: S3 no tiene directorios. Se simulan creando un objeto vacío
+  # con un '/' al final del nombre (Key).
+  crear_directorio:
+    handler: crear_directorio.lambda_handler # Debes crear 'crear_directorio.py'
+    events:
+      - http:
+          path: /s3/bucket/crear-directorio
+          method: post
+          cors: true
+          # En el body del POST, enviarás:
+          # { "bucket_name": "mi-bucket-existente", "directory_name": "mi/carpeta/" }
+          # ¡Asegúrate de que 'directory_name' termine en '/'!
+
+  # 3. Subir un archivo (*)
+  # La forma "optimizada" (como dice el título) es NO pasar el archivo
+  # por la Lambda. En vez de eso, la Lambda genera una "URL pre-firmada" (pre-signed URL)
+  # y el cliente (curl/Postman) usa esa URL para subir el archivo DIRECTAMENTE a S3.
+  # Esta función NO sube el archivo, solo genera la URL.
+  obtener_url_subida:
+    handler: subir_archivo.lambda_handler # Debes crear 'subir_archivo.py'
+    events:
+      - http:
+          path: /s3/bucket/generar-url-subida
+          method: post
+          cors: true
+          # En el body del POST, enviarás:
+          # { 
+          #   "bucket_name": "mi-bucket-existente", 
+          #   "file_name": "mi/carpeta/mi-archivo.jpg",
+          #   "content_type": "image/jpeg" 
+          # }
+          # La Lambda te devolverá una URL.
+
+
